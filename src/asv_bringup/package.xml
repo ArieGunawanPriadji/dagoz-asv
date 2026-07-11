@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>asv_bringup</name>
+  <version>0.1.0</version>
+  <description>Launch file & konfigurasi terpusat untuk ASV</description>
+  <maintainer email="tim@example.com">Tim Dagozilla</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <exec_depend>asv_mavros_bridge</exec_depend>
+  <exec_depend>asv_guidance_control</exec_depend>
+  <exec_depend>asv_mission</exec_depend>
+  <exec_depend>asv_perception</exec_depend>
+  <exec_depend>asv_perception_vision</exec_depend>
+  <exec_depend>mavros</exec_depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
