@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y \
     && bash install_geographiclib_datasets.sh \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /asv_ws
+WORKDIR /dagozilla_ws
 COPY src ./src
 RUN . /opt/ros/jazzy/setup.sh && \
     rosdep update && \
@@ -22,6 +22,6 @@ RUN . /opt/ros/jazzy/setup.sh && \
     colcon build --symlink-install
 
 RUN echo "source /opt/ros/jazzy/setup.bash" >> ~/.bashrc && \
-    echo "source /asv_ws/install/setup.bash" >> ~/.bashrc
+    echo "source /dagozilla_ws/install/setup.bash" >> ~/.bashrc
 
 CMD ["bash"]
