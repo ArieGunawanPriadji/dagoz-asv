@@ -16,6 +16,9 @@ def generate_launch_description():
     fcu_url_arg = DeclareLaunchArgument(
         'fcu_url', default_value='/dev/ttyACM0:115200',
         description='Port serial/UDP koneksi ke Pixhawk')
+    image_topic_arg = DeclareLaunchArgument(
+        'image_topic', default_value='/camera/image_raw',
+        description='Topic sensor_msgs/Image untuk detector buoy.')
 
     mission_config = os.path.join(
         get_package_share_directory('mission'),
@@ -42,12 +45,15 @@ def generate_launch_description():
             executable='mission_manager_node',
             output='screen',
             parameters=[mission_config]),
-        Node(package='vision', executable='obstacle_detector_node', output='screen'),
         Node(
             package='perception',
             executable='vision_detector_node',
             output='screen',
-            parameters=[perception_config]),
+            parameters=[perception_config],
+            remappings=[
+                ('camera/image_raw', LaunchConfiguration('image_topic')),
+                ('obstacles', '/asv/obstacles'),
+            ]),
     ]
 
-    return LaunchDescription([fcu_url_arg, mavros_launch] + nodes)
+    return LaunchDescription([fcu_url_arg, image_topic_arg, mavros_launch] + nodes)

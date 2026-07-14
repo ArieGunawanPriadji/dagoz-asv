@@ -10,6 +10,7 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(std_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(msgs REQUIRED)
@@ -18,7 +19,7 @@ include_directories(include)
 
 add_executable(vision_detector_node src/vision_detector_node.cpp)
 ament_target_dependencies(vision_detector_node
-  rclcpp sensor_msgs geometry_msgs cv_bridge OpenCV msgs)
+  rclcpp sensor_msgs geometry_msgs std_msgs cv_bridge OpenCV msgs)
 target_link_libraries(vision_detector_node ${OpenCV_LIBRARIES})
 
 install(TARGETS vision_detector_node

@@ -62,10 +62,13 @@ ros2 service call /asv/mark_underwater_image std_srvs/srv/Trigger
 ros2 service call /asv/complete_docking std_srvs/srv/Trigger
 ros2 service call /asv/record_penalty std_srvs/srv/Trigger
 
-# Jalankan vision detector (namespace dagozilla)
+# Jalankan vision detector dari topik kamera ROS
 ros2 launch perception vision.launch.py
-# Topic yang muncul: /dagozilla/camera/image_raw (subscribe), /dagozilla/obstacles (publish)
+# Input: /camera/image_raw; output: /asv/obstacles
 # Class deteksi: RED_BUOY, GREEN_BUOY, BLUE_DOCKING_BUOY
+
+# Atau jalankan langsung dari kamera USB (setelah USB passthrough ke WSL)
+ros2 launch perception vision.launch.py use_camera:=true camera_device:=/dev/video0
 ```
 
 ## Alur Kerja Tim (Rekomendasi)
