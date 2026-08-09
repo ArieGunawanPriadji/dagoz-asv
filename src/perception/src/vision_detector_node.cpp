@@ -1,5 +1,5 @@
 #include "perception/vision_detector_node.hpp"
-#include <cv_bridge/cv_bridge.h>
+#include <cv_bridge/cv_bridge.hpp>
 #include <geometry_msgs/msg/point.hpp>
 #include <algorithm>
 #include <functional>

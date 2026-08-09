@@ -3,6 +3,7 @@
 
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/nav_sat_fix.hpp>
+#include <std_msgs/msg/float64.hpp>
 #include <geometry_msgs/msg/twist.hpp>
 #include <msgs/msg/waypoint.hpp>
 #include <msgs/msg/mission_status.hpp>
@@ -23,6 +24,7 @@ public:
 private:
   void gpsCallback(const sensor_msgs::msg::NavSatFix::SharedPtr msg);
   void waypointCallback(const msgs::msg::Waypoint::SharedPtr msg);
+  void headingCallback(const std_msgs::msg::Float64::SharedPtr msg);
   void controlLoop();
   void publishCmd(double linear_x, double angular_z);
 
@@ -32,9 +34,14 @@ private:
 
   std::optional<msgs::msg::Waypoint> active_waypoint_;
   sensor_msgs::msg::NavSatFix current_gps_;
+  bool gps_received_{false};
+  
+  double current_heading_{0.0};
+  bool heading_received_{false};
 
   rclcpp::Subscription<sensor_msgs::msg::NavSatFix>::SharedPtr gps_sub_;
   rclcpp::Subscription<msgs::msg::Waypoint>::SharedPtr waypoint_sub_;
+  rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr heading_sub_;
   rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_pub_;
   rclcpp::Publisher<msgs::msg::MissionStatus>::SharedPtr status_pub_;
   rclcpp::TimerBase::SharedPtr timer_;
