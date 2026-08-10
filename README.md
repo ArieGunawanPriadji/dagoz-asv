@@ -18,58 +18,84 @@ Pixhawk (ArduRover firmware)
  mission (state machine misi)
         │  publish active_waypoint
         ▼
- guidance_control (waypoint follower / PID / pure pursuit)
+ guidance_control (waypoint follower / PID / pure pursuit / buoy centering)
         │  publish cmd_vel
         ▼
    MAVROS setpoint  →  Pixhawk (mode GUIDED)
 
- vision (kamera/lidar) ──► obstacles ──► dipakai guidance/mission
- navigation  (opsional: EKF lokal jika GPS Pixhawk kurang presisi)
+ perception (deteksi buoy/obstacle OpenCV, HSV tuner, camera stream) ──► obstacles ──► guidance/mission
+ navigation (opsional: EKF lokal jika GPS Pixhawk kurang presisi)
 ```
 
 ## Struktur Package
 
 | Package | Bahasa | Fungsi |
 |---|---|---|
-| `msgs` | interfaces (msg/srv) | Definisi message & service kustom (Waypoint, MissionStatus, dst) |
+| `msgs` | interfaces (msg/srv) | Definisi message & service kustom (Waypoint, MissionStatus, ObstacleArray, dst) |
 | `mavros_bridge` | C++ | Jembatan node ROS2 ↔ Pixhawk lewat MAVROS |
-| `guidance_control` | C++ | Guidance & control: waypoint follower, PID/pure pursuit |
+| `guidance_control` | C++ | Guidance & control: waypoint follower, buoy centering dengan aturan safety stop & live visualizer stream |
 | `navigation` | C++ (belum ada node) | State estimation tambahan (opsional, mis. EKF lokal) |
 | `vision` | C++ | Stub deteksi obstacle generik (lidar/sensor non-vision) |
-| `perception` | **C++** | Deteksi buoy/obstacle via OpenCV, jalan di namespace `dagozilla` |
+| `perception` | C++ | Driver kamera OpenCV, vision detector buoy/obstacle KKI 2026, & HSV calibration tool |
 | `mission` | C++ | State machine misi ASV KKI 2026: buoy, imaging, docking, timeout, penalti |
-| `bringup` | launch/config only | Launch file utama + file konfigurasi terpusat |
-| `simulation` | launch/config only | Konfigurasi simulasi Gazebo + ArduPilot SITL untuk testing tanpa kapal fisik |
+| `bringup` | launch/config | Launch file utama + file konfigurasi terpusat |
+| `simulation` | launch/config | Konfigurasi simulasi Gazebo + ArduPilot SITL untuk testing tanpa kapal fisik |
 
-## Cara Pakai
+---
 
+## Cara Pakai & Tools Utama
+
+### 1. Build Workspace
 ```bash
-# Build
-cd dagozilla_ws
+cd dagozilla-asv
 colcon build --symlink-install
 source install/setup.bash
+```
 
-# Jalankan (kapal asli, sesuaikan port Pixhawk)
+### 2. HSV Threshold Calibration Tool (`perception`)
+Digunakan untuk kalibrasi batas warna HSV buoy (Merah, Hijau, Blue Dock) secara interaktif dengan GUI OpenCV:
+```bash
+ros2 launch perception hsv_tuner.launch.py camera_device:=/dev/video0
+```
+- **Fitur & Hotkey GUI**:
+  - **`S` / `P`**: Print/dump nilai HSV saat ini langsung formatted dalam format YAML ke terminal (tinggal copy-paste ke `vision_params.yaml`).
+  - **`R`**: Load preset HSV Buoy Merah (`[0-10, 120-255, 70-255]`).
+  - **`G`**: Load preset HSV Buoy Hijau (`[35-85, 80-255, 60-255]`).
+  - **`B`**: Load preset HSV Blue Dock (`[95-130, 80-255, 50-255]`).
+
+### 3. ASV Vision Guidance & Buoy Centering Live Stream (`guidance_control`)
+Menjalankan pipeline navigasi berbasis penglihatan komputer (kamera + vision detector + buoy centering + MAVROS bridge):
+```bash
+ros2 launch guidance_control asv_vision_guidance.launch.py camera_device:=/dev/video0
+```
+- **Fitur Live Display Window & Feedback Visual**:
+  - Visualisasi deteksi lingkaran & label objek (`RED BUOY`, `GREEN BUOY`, `BLUE DOCK`).
+  - Garis vektor penghubung buoy merah & hijau beserta crosshair titik tengah target (midpoint target).
+  - Indikator bar kemudi di bagian bawah tampilan kamera.
+  - **Banner Status OSD**:
+    - **HIJAU**: `[ STATUS: CENTERING ACTIVE ]` saat kedua buoy (merah & hijau) terdeteksi.
+    - **MERAH**: `[ STATUS: SAFETY STOP - BUOY MISSING ]` saat kurang dari 2 buoy terdeteksi (aturan keselamatan ketat: motor otomatis mati).
+  - Stream gambar terannotasi juga dipublikasikan ke topik ROS `/asv/guidance_debug` (`sensor_msgs/Image`) untuk remote viewer / GCS.
+
+### 4. System Bringup Utama (Kapal Asli)
+```bash
 ros2 launch bringup bringup.launch.py fcu_url:=/dev/ttyACM0:115200
-
-# Mulai misi
+```
+Mulai state machine misi:
+```bash
 ros2 service call /asv/start_mission std_srvs/srv/Trigger
+```
 
-# Event misi sesuai panduan KKI 2026
+Services pendukung sesuai panduan KKI 2026:
+```bash
 ros2 service call /asv/complete_buoy_pair std_srvs/srv/Trigger
 ros2 service call /asv/mark_surface_image std_srvs/srv/Trigger
 ros2 service call /asv/mark_underwater_image std_srvs/srv/Trigger
 ros2 service call /asv/complete_docking std_srvs/srv/Trigger
 ros2 service call /asv/record_penalty std_srvs/srv/Trigger
-
-# Jalankan vision detector dari topik kamera ROS
-ros2 launch perception vision.launch.py
-# Input: /camera/image_raw; output: /asv/obstacles
-# Class deteksi: RED_BUOY, GREEN_BUOY, BLUE_DOCKING_BUOY
-
-# Atau jalankan langsung dari kamera USB (setelah USB passthrough ke WSL)
-ros2 launch perception vision.launch.py use_camera:=true camera_device:=/dev/video0
 ```
+
+---
 
 ## Alur Kerja Tim (Rekomendasi)
 
@@ -77,7 +103,8 @@ ros2 launch perception vision.launch.py use_camera:=true camera_device:=/dev/vid
 2. **Testing di simulasi dulu** (`simulation`, ArduPilot SITL) sebelum diuji di kapal fisik/kolam.
 3. **Satu orang pegang `mavros_bridge` & `mission`** (interface kritis), lainnya bisa paralel di `guidance_control` / `perception`.
 4. **Isi `docs/`** dengan wiring diagram, daftar topic/service, dan catatan kalibrasi kompas/GPS — penting banget buat laporan teknis & saat ditanya juri.
-5. Pasang **pre-commit / CI** (`.github/workflows/ci.yml`) supaya build error ketauan sebelum H-1 lomba.
+
+---
 
 ## Rulebook Reference
 

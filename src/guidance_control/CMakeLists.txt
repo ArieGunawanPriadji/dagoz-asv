@@ -10,6 +10,8 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(cv_bridge REQUIRED)
+find_package(OpenCV REQUIRED)
 find_package(msgs REQUIRED)
 
 include_directories(include)
@@ -18,7 +20,12 @@ add_executable(waypoint_follower_node src/waypoint_follower_node.cpp)
 ament_target_dependencies(waypoint_follower_node
   rclcpp sensor_msgs geometry_msgs msgs)
 
-install(TARGETS waypoint_follower_node
+add_executable(buoy_centering_node src/buoy_centering_node.cpp)
+ament_target_dependencies(buoy_centering_node
+  rclcpp sensor_msgs geometry_msgs cv_bridge OpenCV msgs)
+target_link_libraries(buoy_centering_node ${OpenCV_LIBRARIES})
+
+install(TARGETS waypoint_follower_node buoy_centering_node
   DESTINATION lib/${PROJECT_NAME})
 
 install(DIRECTORY launch config

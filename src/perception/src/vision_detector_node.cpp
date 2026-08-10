@@ -29,6 +29,8 @@ VisionDetectorNode::VisionDetectorNode(const rclcpp::NodeOptions & options)
 
   obstacle_pub_ = this->create_publisher<msgs::msg::ObstacleArray>(
     "obstacles", 10);
+  debug_image_pub_ = this->create_publisher<sensor_msgs::msg::Image>(
+    "/asv/camera_debug", 10);
 
   RCLCPP_INFO(
     this->get_logger(),
@@ -45,7 +47,41 @@ void VisionDetectorNode::imageCallback(const sensor_msgs::msg::Image::ConstShare
     return;
   }
 
+  cv::Mat debug_frame = cv_ptr->image.clone();
   auto obstacles = detect(cv_ptr->image, msg->header);
+
+  // Draw detected obstacles on debug_frame
+  for (size_t i = 0; i < obstacles.positions.size(); ++i) {
+    cv::Point2f center(obstacles.positions[i].x, obstacles.positions[i].y);
+    float radius = obstacles.radii[i];
+    uint8_t cls = obstacles.classes[i];
+
+    cv::Scalar color(255, 255, 255);
+    std::string label = "OBJ";
+    if (cls == msgs::msg::ObstacleArray::RED_BUOY) {
+      color = cv::Scalar(0, 0, 255);
+      label = "RED_BUOY";
+    } else if (cls == msgs::msg::ObstacleArray::GREEN_BUOY) {
+      color = cv::Scalar(0, 255, 0);
+      label = "GREEN_BUOY";
+    } else if (cls == msgs::msg::ObstacleArray::BLUE_DOCKING_BUOY) {
+      color = cv::Scalar(255, 0, 0);
+      label = "BLUE_BUOY";
+    }
+
+    cv::circle(debug_frame, center, static_cast<int>(radius), color, 2);
+    cv::circle(debug_frame, center, 4, color, -1);
+    cv::putText(debug_frame, label, cv::Point(center.x - 20, center.y - radius - 5),
+                cv::FONT_HERSHEY_SIMPLEX, 0.5, color, 2);
+  }
+
+  // Publish debug image for live stream / GCS viewer
+  cv_bridge::CvImage debug_msg;
+  debug_msg.header = msg->header;
+  debug_msg.encoding = "bgr8";
+  debug_msg.image = debug_frame;
+  debug_image_pub_->publish(*debug_msg.toImageMsg());
+
   obstacle_pub_->publish(obstacles);
 }
 
