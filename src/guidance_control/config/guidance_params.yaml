@@ -1,0 +1,7 @@
+buoy_centering_node:
+  ros__parameters:
+    heading_kp: 1.5
+    max_linear_speed: 0.8
+    max_yaw_rate: 1.0
+    frame_width: 640.0
+    speed_reduction_factor: 0.6

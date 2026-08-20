@@ -13,7 +13,6 @@
   <depend>geometry_msgs</depend>
   <depend>std_msgs</depend>
   <depend>cv_bridge</depend>
-  <depend>OpenCV</depend>
   <depend>msgs</depend>
   <exec_depend>v4l2_camera</exec_depend>
 

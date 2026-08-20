@@ -22,7 +22,17 @@ ament_target_dependencies(vision_detector_node
   rclcpp sensor_msgs geometry_msgs std_msgs cv_bridge OpenCV msgs)
 target_link_libraries(vision_detector_node ${OpenCV_LIBRARIES})
 
-install(TARGETS vision_detector_node
+add_executable(hsv_tuner_node src/hsv_tuner_node.cpp)
+ament_target_dependencies(hsv_tuner_node
+  rclcpp sensor_msgs geometry_msgs std_msgs cv_bridge OpenCV msgs)
+target_link_libraries(hsv_tuner_node ${OpenCV_LIBRARIES})
+
+add_executable(opencv_camera_node src/opencv_camera_node.cpp)
+ament_target_dependencies(opencv_camera_node
+  rclcpp sensor_msgs geometry_msgs std_msgs cv_bridge OpenCV msgs)
+target_link_libraries(opencv_camera_node ${OpenCV_LIBRARIES})
+
+install(TARGETS vision_detector_node hsv_tuner_node opencv_camera_node
   DESTINATION lib/${PROJECT_NAME})
 
 install(DIRECTORY launch config

@@ -45,6 +45,7 @@ private:
 
   rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_sub_;
   rclcpp::Publisher<msgs::msg::ObstacleArray>::SharedPtr obstacle_pub_;
+  rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr debug_image_pub_;
 };
 
 }  // namespace dagozilla
