@@ -12,7 +12,8 @@ class VideoPublisher(Node):
         self.bridge = CvBridge()
         
         # The path to your test video
-        self.cap = cv2.VideoCapture('/home/bertrand/Downloads/Bola/vidnya.mp4')
+        # Instead of video file path, use 0 for default laptop webcam:
+        self.cap = cv2.VideoCapture(0)
         
         # Publish frames at 30 FPS (every 33ms)
         self.timer = self.create_timer(0.033, self.timer_callback)
